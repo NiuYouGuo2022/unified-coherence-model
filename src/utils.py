@@ -13,22 +13,22 @@ def argument_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment_path', type=str,
                         default="./Experiments/ELMo/", help='Save path of best model')
-    parser.add_argument('--save_model', type=bool, default=False,
+    parser.add_argument('--save_model', type=bool, default=True,
                         help='save best model?')
     parser.add_argument('--n_window', type=int, default=3,
                         help='Number of permutation window. Only for local. vlaues: 1/2/3')
     parser.add_argument('--train_path', type=str,
-                        default="/data/Coherence/Dataset_Global/train/", help='Train paired Data')  # "../data-global/train/"
+                        default="./Dataset/train/", help='Train paired Data')  # "../data-global/train/"
     parser.add_argument('--test_path', type=str,
-                        default="/data/Coherence/Dataset_Global/dev/", help='test/Dev paired Data')
-    parser.add_argument('--file_list_train', type=str, default="/data/Coherence/Dataset_Global/wsj.train",
+                        default="./Dataset/test/", help='test/Dev paired Data')
+    parser.add_argument('--file_list_train', type=str, default="wsj.train",
                         help='Only for Global Dataset: Train Data list')
-    parser.add_argument('--file_list_test', type=str, default="/data/Coherence/Dataset_Global/wsj.dev",
+    parser.add_argument('--file_list_test', type=str, default="wsj.test",
                         help='Only for Global Dataset: test/Dev Data list')
     parser.add_argument('--pre_embedding_path', type=str,
-                        default="/data/tasnim/pretrained_embeddings/GoogleNews-vectors-negative300.bin", help='Pretrained word embedding path')
+                        default="GoogleNews-vectors-negative300.bin", help='Pretrained word embedding path')
     parser.add_argument('--vocab_path', type=str,
-                        default="/data/Coherence/Vocab", help='Vocab path')
+                        default="./Dataset/vocab/Vocab", help='Vocab path')
     parser.add_argument('--padding_symbol', type=str,
                         default="<pad>", help='Vocab path')
     # Training Parameter-------------------------------------------------------------
@@ -86,11 +86,11 @@ def argument_parser():
 
     embedding = parser.add_mutually_exclusive_group()
     embedding.add_argument('--GoogleEmbedding', type=bool,
-                           default=True, help='Google embedding')
+                           default=False, help='Google embedding')
     embedding.add_argument('--RandomEmbedding', type=bool,
                            default=False, help='Random embedding')
     embedding.add_argument('--ELMo', type=bool,
-                           default=False, help='ELMo embedding')
+                           default=True, help='ELMo embedding')
     parser.add_argument('--ELMo_Size', type=str,
                         default='small', help='Size of ELMo')
     parser.add_argument('--bilinear_dim', type=int,
@@ -123,7 +123,7 @@ def print_args(args):
     print("---------------------------------------------------------\n")
 
 
-def get_ELMo_layer(weight_size, num_output_representations=2, dropout=0):
+def get_ELMo_layer(weight_size, num_output_representations=2, dropout=0, out_dir = './allen_cache'):
 
     if weight_size == 'large':
         weight_file = 'https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_weights.hdf5'
@@ -136,9 +136,16 @@ def get_ELMo_layer(weight_size, num_output_representations=2, dropout=0):
         options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_options.json"
     else:
         print("Weight size should in large, medium or small")
-
-    elmo = Elmo(options_file, weight_file, num_output_representations=2,
-                dropout=0.5, requires_grad=False)  # use this as a embedding layer
+    
+    
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+        wget.download(weight_file,out_dir)
+        wget.download(options_file, out_dir)
+    
+    weight_file = os.path.join(out_dir, weight_file.split('/')[-1])
+    options_file = os.path.join(out_dir, options_file.split('/')[-1])	
+    elmo = Elmo(options_file, weight_file, num_output_representations=2, dropout=0.5, requires_grad=False)  # use this as a embedding layer
     return elmo
 
 
